@@ -91,13 +91,13 @@ df["follower_friend_ratio"] = df["follower_friend_ratio"].map(lambda x: f"{x:.3f
 # 计算活跃小时数（最小为1，防止除以0）
 df["active_hours"] = (df["last_tweet_time"] - df["first_tweet_time"]).dt.total_seconds() / 3600
 # 计算每小时发推频率
-df["tweets_per_hour"] = df["tweet_count"] / df["active_hours"]
+df["tweets_per_hour"] = (df["tweet_count"] / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) else x)
 # 每天推文频率
 df["tweets_per_day"] = (df["tweet_count"] / df["active_hours"] * 24).apply(lambda x: 0 if np.isinf(x) else x)
 # 每小时新增关注频率
-df["follower_per_hour"] = ((df["last_followers"] - df["first_followers"]) / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) else x)
+df["follower_per_hour"] = ((df["last_followers"] - df["first_followers"]) / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) or pd.isna(x) else x)
 # 攻击性
-df["aggressiveness"] = ( df["tweets_per_hour"] + df["follower_per_hour"] ) / 350
+df["aggressiveness"] = ( df["tweets_per_hour"] + df["follower_per_hour"] ) / 140
 # 能见度
 df["visibility"] = ( df["mention_count"] * 11.4 + df["hashtag_count"] * 11.6 ) / 140
 # 回复率
@@ -106,8 +106,7 @@ df["reply_rate"] = df["reply_received_count"] / df["tweet_count"]
 df["quote_rate"] = df["quote_count"] / df["tweet_count"]
 
 # 删除不需要导出的中间列
-df.drop(columns=["first_tweet_time", "last_tweet_time","tweet_count","tweets_per_hour","follower_per_hour",
-                 "last_followers","first_followers","hashtag_count","reply_received_count","quote_count"], inplace=True)
+df.drop(columns=["first_tweet_time", "last_tweet_time","tweet_count","hashtag_count","reply_received_count","quote_count"], inplace=True)
 
 # 导出为 CSV
 df.to_csv("./data/cleaned_data_all.csv", index=False, encoding="utf-8-sig")
