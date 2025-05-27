@@ -29,14 +29,14 @@ Les données sont stockées dans une base MongoDB nommée **IF29**, collection *
 
 ### Script utilisé
 
-Le script `extract_features.py` permet d’extraire des **statistiques agrégées par utilisateur** à partir des tweets.
+Le script `dataCleaning.py` permet d’extraire des **statistiques agrégées par utilisateur** à partir des tweets.
 
 **Principales étapes :**
 
 - Chargement des données depuis MongoDB
 - Agrégation des tweets par utilisateur (`user_id`)
 - Calcul de diverses métriques comportementales
-- Export d’un fichier CSV `cleaned_data_all.csv` pour l’entraînement des modèles
+- Export d’un fichier CSV cleaned_data_all.csv pour la visualisation, la normalisation et la réduction de dimension (PCA, t-SNE), avant l’entraînement du modèle. 
 
 ### Variables extraites
 
