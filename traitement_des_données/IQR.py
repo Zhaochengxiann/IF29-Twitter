@@ -1,0 +1,46 @@
+### 用IQR来对数据进行可视化，获取相关合理的用于打标签的参数
+
+import pandas as pd
+
+
+# 载入数据
+df = pd.read_csv("../dataset/cleaned_data_all.csv")
+
+numeric_df = df.drop(columns=['user_id'])
+
+iqr_bounds = {}
+
+for column in numeric_df.columns:
+    Q1 = numeric_df[column].quantile(0.25)
+    Q3 = numeric_df[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    iqr_bounds[column] = {
+        'Q1': Q1,
+        'Q3': Q3,
+        'IQR': IQR,
+        'lower_bound': lower_bound,
+        'upper_bound': upper_bound
+    }
+
+# 转换为 DataFrame 展示
+print(pd.DataFrame(iqr_bounds).T) # .T 是转置，让列名变为索引，便于阅读
+
+
+#                                 Q1            Q3  ...   lower_bound   upper_bound
+# followers_count         103.000000    753.000000  ...   -872.000000   1728.000000
+# friends_count           167.000000    758.000000  ...   -719.500000   1644.500000
+# statuses_count         1104.000000  17885.000000  ... -24067.500000  43056.500000
+# retweet_count             0.000000      0.000000  ...      0.000000      0.000000
+# favorite_count            0.000000      0.000000  ...      0.000000      0.000000
+# mention_count             1.000000      2.000000  ...     -0.500000      3.500000
+# url_count                 0.000000      1.000000  ...     -1.500000      2.500000
+# text_length              97.000000    230.000000  ...   -102.500000    429.500000
+# follower_friend_ratio     0.368000      1.401000  ...     -1.181500      2.950500
+# active_hours              0.000000      6.750139  ...    -10.125208     16.875347
+# tweets_per_day            0.000000      1.993556  ...     -2.990333      4.983889
+# aggressiveness            0.000000      0.000701  ...     -0.001051      0.001752
+# visibility                0.162857      0.490000  ...     -0.327857      0.980714
+# reply_rate                0.000000      0.000000  ...      0.000000      0.000000
+# quote_rate                0.000000      0.000000  ...      0.000000      0.000000
