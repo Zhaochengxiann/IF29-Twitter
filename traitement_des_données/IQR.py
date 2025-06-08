@@ -1,4 +1,86 @@
+
 ### 用IQR来对数据进行可视化，获取相关合理的用于打标签的参数
+
+import pandas as pd
+import numpy as np
+
+# 载入数据
+df = pd.read_csv("../dataset/cleaned_data_all.csv")
+
+# 将缺失值填充为0
+df["follower_friend_ratio"] = df["follower_friend_ratio"].fillna(0)
+
+features = [
+    'followers_count','friends_count','statuses_count', 'mention_count', 'url_count', 'text_length',
+    'follower_friend_ratio', 'active_hours', 'tweets_per_day','aggressiveness', 'visibility'
+]
+
+# 保证 features 中字段都在 df_clean 里
+X = df[features]
+
+# 检查各列的唯一值数量（如果有其他几乎恒定的列也可以考虑删）
+print(X.nunique())
+
+
+X = df[features]
+
+#计算双侧IQR的方法
+def calculate_iqr_bounds(column_data):
+    Q1 = column_data.quantile(0.25)
+    Q3 = column_data.quantile(0.75)
+    IQR = Q3 - Q1
+    return Q1 - 1.5 * IQR, Q3 + 1.5 * IQR
+
+#计算单侧IQR的方法
+def calculate_high_iqr_bound(column_data):
+    Q3 = column_data.quantile(0.75)
+    Q1 = column_data.quantile(0.25)
+    IQR = Q3 - Q1
+    return Q3 + 1.5 * IQR
+
+# 使用百分位法计算上下限
+def calculate_percentile_bounds(column_data, lower_percentile=1, upper_percentile=99):
+    return column_data.quantile(lower_percentile/100), column_data.quantile(upper_percentile/100)
+
+# 保存每个特征对应的异常检测方法与阈值
+bounds = {}
+
+# -------- 针对每列特征进行自动判断并计算对应异常值界限 --------
+for col in features:
+    uniq = X[col].nunique()       # 唯一值个数
+    total = len(X[col])           # 总样本数
+    
+    # 情况1：如果是比值类特征或明显右偏的指标 → 用 IQR 单侧（只检测高值异常）
+    if 'ratio' in col or col in ['tweets_per_day', 'aggressiveness']:
+        method = 'IQR-High'
+        upper = calculate_high_iqr_bound(X[col])
+        bounds[col] = {'method': method, 'lower': None, 'upper': upper}
+    
+    # 情况2：如果唯一值较少且样本量很大 → 使用百分位方法控制异常比例
+    elif uniq < 1000 and total > 100000:
+        method = 'Percentile'
+        lb, ub = calculate_percentile_bounds(X[col], 1, 99)  # 取1%-99%的范围
+        bounds[col] = {'method': method, 'lower': lb, 'upper': ub}
+    
+    # 情况3：默认使用 IQR 双侧法检测异常（适用于多数连续变量）
+    else:
+        method = 'IQR-Both'
+        lb, ub = calculate_iqr_bounds(X[col])
+        bounds[col] = {'method': method, 'lower': lb, 'upper': ub}
+
+# -------- 输出所有特征的异常值检测方法及阈值 --------
+
+# 将结果转换为 DataFrame
+bounds_df = pd.DataFrame.from_dict(bounds, orient='index')
+
+# 重设索引名称为 feature（原本是列名）
+bounds_df.index.name = 'feature'
+
+# 显示结果
+print(bounds_df)
+
+
+'''
 
 import pandas as pd
 import numpy as np
@@ -77,3 +159,40 @@ print(pd.DataFrame(iqr_bounds).T) # .T 是转置，让列名变为索引，便�
 # visibility                0.164286      0.492857  ...     -0.328571      0.985714
 # reply_rate                0.000000      0.000000  ...      0.000000      0.000000
 # quote_rate                0.000000      0.000000  ...      0.000000      0.000000
+
+'''
+
+# -------- 根据所生成的上下限判断账号是否为异常 --------
+
+
+# 初始化异常计数列，每个用户的异常特征数初始为 0
+df['anomaly_feature_count'] = 0
+
+# 遍历每个特征，对每一列检测是否越界，并累计异常数量
+for feature in bounds_df.index:
+    lower = bounds_df.loc[feature, 'lower']
+    upper = bounds_df.loc[feature, 'upper']
+
+    # 构造布尔掩码
+    is_low = df[feature] < lower if pd.notna(lower) else False
+    is_high = df[feature] > upper if pd.notna(upper) else False
+
+    # 累加异常次数
+    df['anomaly_feature_count'] += (is_low | is_high)
+
+# 根据异常次数 >= 2 来判定最终 label
+df['label'] = (df['anomaly_feature_count'] >= 2).astype(int)
+
+
+# -------- 输出label的csv文件 --------
+
+# 仅保留 user_id 和最终异常标签
+output_df = df[['user_id', 'label']]
+
+# 导出为 CSV 文件
+output_df.to_csv("anomaly_labels.csv", index=False)
+
+print("✅ 异常标注结果已保存为 anomaly_labels.csv")
+
+
+#啊啊啊啊啊啊啊啊啊啊啊啊啊啊不对劲啊，怎么最后有403656个异常账号啊啊啊啊啊
