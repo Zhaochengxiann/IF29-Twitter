@@ -96,6 +96,6 @@ df["quote_rate"] = df["quote_count"] / df["tweet_count"]
 
 df.drop(columns=["first_tweet_time", "last_tweet_time","tweet_count","hashtag_count","reply_received_count","quote_count"], inplace=True)
 
-df.to_csv("./dataset/cleaned_data_all_test.csv", index=False, encoding="utf-8-sig")
+df.to_csv("./dataset/cleaned_data_all.csv", index=False, encoding="utf-8-sig")
 
 print("Exportation réussie：cleaned_data_all.csv")
