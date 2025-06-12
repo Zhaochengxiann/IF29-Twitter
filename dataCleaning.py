@@ -10,7 +10,7 @@ client = MongoClient("mongodb://localhost:27017/")
 db = client["IF29"]
 
 # 连接集合
-collection = db["IF29"]
+collection = db["test"]
 
 # 查询一条数据
 document = collection.find_one()
@@ -28,6 +28,7 @@ for tweet in collection.find():
         user = tweet["user"]
         user_id = user["id"]
         followers_count = tweet["user"].get("followers_count", 0)
+        friends_count = tweet["user"].get("friends_count",0)
         created_at_str = tweet.get("created_at", "")
         created_at = datetime.strptime(created_at_str, "%a %b %d %H:%M:%S %z %Y")  # Twitter时间格式
 
@@ -35,7 +36,7 @@ for tweet in collection.find():
             user_stats[user_id] = {
                 "user_id": user_id,
                 "followers_count": followers_count,
-                "friends_count": user.get("friends_count", 0),
+                "friends_count": friends_count,
                 "statuses_count": user.get("statuses_count", 0),
                 "retweet_count": 0,
                 "favorite_count": 0,
@@ -44,8 +45,8 @@ for tweet in collection.find():
                 "text_length": 0,
                 "first_tweet_time": created_at,
                 "last_tweet_time": created_at,
-                "first_followers": followers_count,
-                "last_followers": followers_count,
+                "first_friends": friends_count,
+                "last_friends": friends_count,
                 "tweet_count": 1,
                 "hashtag_count": 0,
                 "reply_received_count": 0,
@@ -56,10 +57,10 @@ for tweet in collection.find():
             user_stats[user_id]["tweet_count"] += 1
             if created_at < user_stats[user_id]["first_tweet_time"]:
                 user_stats[user_id]["first_tweet_time"] = created_at
-                user_stats[user_id]["first_followers"] = followers_count
+                user_stats[user_id]["first_friends"] = friends_count
             if created_at > user_stats[user_id]["last_tweet_time"]:
                 user_stats[user_id]["last_tweet_time"] = created_at
-                user_stats[user_id]["last_followers"] = followers_count
+                user_stats[user_id]["last_friends"] = friends_count
             if tweet.get("reply_count", 0) > 0:
                 user_stats[user_id]["reply_received_count"] += 1
             if tweet.get("quote_count", 0) > 0:
@@ -95,9 +96,9 @@ df["tweets_per_hour"] = (df["tweet_count"] / df["active_hours"]).apply(lambda x:
 # 每天推文频率
 df["tweets_per_day"] = (df["tweet_count"] / df["active_hours"] * 24).apply(lambda x: 0 if np.isinf(x) else x)
 # 每小时新增关注频率
-df["follower_per_hour"] = ((df["last_followers"] - df["first_followers"]) / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) or pd.isna(x) else x)
+df["friends_per_hour"] = ((df["last_friends"] - df["first_friends"]).abs() / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) or pd.isna(x) else x)
 # 攻击性
-df["aggressiveness"] = ( df["tweets_per_hour"] + df["follower_per_hour"] ) / 140
+df["aggressiveness"] = ( df["tweets_per_hour"] + df["friends_per_hour"] ) / 140
 # 能见度
 df["visibility"] = ( df["mention_count"] * 11.4 + df["hashtag_count"] * 11.6 ) / 140
 # 回复率
@@ -109,6 +110,6 @@ df["quote_rate"] = df["quote_count"] / df["tweet_count"]
 df.drop(columns=["first_tweet_time", "last_tweet_time","tweet_count","hashtag_count","reply_received_count","quote_count"], inplace=True)
 
 # 导出为 CSV
-df.to_csv("./data/cleaned_data_all.csv", index=False, encoding="utf-8-sig")
+df.to_csv("./dataset/cleaned_data_all_test.csv", index=False, encoding="utf-8-sig")
 
 print("导出成功：cleaned_data_all.csv")
