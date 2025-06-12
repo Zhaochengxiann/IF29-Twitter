@@ -100,7 +100,7 @@ df["friends_per_hour"] = ((df["last_friends"] - df["first_friends"]).abs() / df[
 # 攻击性
 df["aggressiveness"] = ( df["tweets_per_hour"] + df["friends_per_hour"] ) / 140
 # 能见度
-df["visibility"] = ( df["mention_count"] * 11.4 + df["hashtag_count"] * 11.6 ) / 140
+df["visibility"] = ( df["mention_count"] * 11.4 + df["hashtag_count"] * 11.6 ) / 280
 # 回复率
 df["reply_rate"] = df["reply_received_count"] / df["tweet_count"]
 # 引用率
