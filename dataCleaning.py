@@ -3,34 +3,24 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-# 本地 MongoDB，默认端口 27017
 client = MongoClient("mongodb://localhost:27017/")
-
-# 连接数据库
 db = client["IF29"]
-
-# 连接集合
 collection = db["test"]
-
-# 查询一条数据
 document = collection.find_one()
-
-# 初始化结果字典
 user_stats = {}
 
 count = 0
-# 遍历所有推文
 for tweet in collection.find():
     try:
         count += 1
         if count % 10000 == 0:
-            print(f"已处理 {count} 条 tweet...")
+            print(f" {count} tweet transformés...")
         user = tweet["user"]
         user_id = user["id"]
         followers_count = tweet["user"].get("followers_count", 0)
         friends_count = tweet["user"].get("friends_count",0)
         created_at_str = tweet.get("created_at", "")
-        created_at = datetime.strptime(created_at_str, "%a %b %d %H:%M:%S %z %Y")  # Twitter时间格式
+        created_at = datetime.strptime(created_at_str, "%a %b %d %H:%M:%S %z %Y")  
 
         if user_id not in user_stats:
             user_stats[user_id] = {
@@ -66,8 +56,6 @@ for tweet in collection.find():
             if tweet.get("quote_count", 0) > 0:
                 user_stats[user_id]["quote_count"] += 1
 
-
-    # 当前这条 tweet 的数据
         stats = user_stats[user_id]
         stats["retweet_count"] += tweet.get("retweet_count", 0)
         stats["favorite_count"] += tweet.get("favorite_count", 0)
@@ -80,36 +68,34 @@ for tweet in collection.find():
         stats["text_length"] += len(tweet.get("text", ""))
 
     except Exception as e:
-        print("❌ 跳过异常数据:", e)
+        print("❌ Sauter les données d'exception:", e)
 
-# 转换为 DataFrame
+#DataFrame
 df = pd.DataFrame(user_stats.values())
 
-# 粉丝/好友比列（避免除以 0）
+# follower_friend_ratio
 df["follower_friend_ratio"] = df["followers_count"] / df["friends_count"].replace(0, pd.NA)
 df["follower_friend_ratio"] = df["follower_friend_ratio"].map(lambda x: f"{x:.3f}" if pd.notnull(x) else "")
 
-# 计算活跃小时数（最小为1，防止除以0）
+# heures_actives
 df["active_hours"] = (df["last_tweet_time"] - df["first_tweet_time"]).dt.total_seconds() / 3600
-# 计算每小时发推频率
+# tweets_par_heure
 df["tweets_per_hour"] = (df["tweet_count"] / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) else x)
-# 每天推文频率
-df["tweets_per_day"] = (df["tweet_count"] / df["active_hours"] * 24).apply(lambda x: 0 if np.isinf(x) else x)
-# 每小时新增关注频率
-df["friends_per_hour"] = ((df["last_friends"] - df["first_friends"]).abs() / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) or pd.isna(x) else x)
-# 攻击性
+# "tweets_par_heure
+df["tweets_par_jour"] = (df["tweet_count"] / df["active_hours"] * 24).apply(lambda x: 0 if np.isinf(x) else x)
+# friends_per_hour
+df["amis_par_heure"] = ((df["last_friends"] - df["first_friends"]).abs() / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) or pd.isna(x) else x)
+# agressivité  - Les nombres maximums d'API sont dérivés des journaux Twitter POST Endpoint Rate Limit pour 2018.
 df["aggressiveness"] = ( df["tweets_per_hour"] + df["friends_per_hour"] ) / 140
-# 能见度
+# visibilité  -En utilisant la formule de SPOT 1.0, basée sur les changements 2018 de la limite de caractères du canal Twitter officiel
 df["visibility"] = ( df["mention_count"] * 11.4 + df["hashtag_count"] * 11.6 ) / 280
-# 回复率
+# taux de réponse
 df["reply_rate"] = df["reply_received_count"] / df["tweet_count"]
-# 引用率
+# taux de citation
 df["quote_rate"] = df["quote_count"] / df["tweet_count"]
 
-# 删除不需要导出的中间列
 df.drop(columns=["first_tweet_time", "last_tweet_time","tweet_count","hashtag_count","reply_received_count","quote_count"], inplace=True)
 
-# 导出为 CSV
 df.to_csv("./dataset/cleaned_data_all_test.csv", index=False, encoding="utf-8-sig")
 
-print("导出成功：cleaned_data_all.csv")
+print("Exportation réussie：cleaned_data_all.csv")
