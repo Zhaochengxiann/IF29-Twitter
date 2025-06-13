@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Charger les données
-df = pd.read_csv(r"C:\Users\pret\IF29-Twitter\dataset\cleaned_data_all.csv")
+df = pd.read_csv(r"..\dataset\cleaned_data_all.csv")
 
 # Remplacer les valeurs manquantes (essentiel pour ratio)
 df["follower_friend_ratio"] = df["follower_friend_ratio"].fillna(0)
@@ -34,10 +34,10 @@ df["label"] = (
 ).astype(int)
 
 # -------- Export final -------- #
-df.to_csv("cleaned_data_with_validated_label.csv", index=False)
-print("✅ Fichier exporté : cleaned_data_with_validated_label.csv")
+df.to_csv("..\dataset\cleaned_data_with_validated_label.csv", index=False)
+print("Fichier exporté : cleaned_data_with_validated_label.csv")
 
 # -------- Optionnel : Résumé rapide -------- #
 nb_total = len(df)
 nb_suspects = df["label"].sum()
-print(f"\n📊 Résumé : {nb_suspects} profils suspects détectés sur {nb_total} (soit {nb_suspects/nb_total:.2%})")
+print(f"\nRésumé : {nb_suspects} profils suspects détectés sur {nb_total} (soit {nb_suspects/nb_total:.2%})")
