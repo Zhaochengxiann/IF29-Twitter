@@ -97,8 +97,8 @@ for feature in bounds_df.index:
     # Nombre cumulé d'anomalies
     df['anomaly_feature_count'] += (is_low | is_high)
 
-# Déterminer le label final en fonction du nombre d'anomalies >= 2.
-df['label'] = (df['anomaly_feature_count'] >= 2).astype(int)
+# Déterminer le label final en fonction du nombre d'anomalies >= 3.
+df['label'] = (df['anomaly_feature_count'] >= 3).astype(int)
 
 
 # -------- Fichier CSV contenant les étiquettes --------
