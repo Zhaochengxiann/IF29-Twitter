@@ -107,3 +107,9 @@ df.to_csv("cleaned_data_with_anomaly_label.csv", index=False)
 
 print("Le fichier contenant toutes les propriétés et les étiquettes d'anomalie a été enregistré sous le nom cleaned_data_with_anomaly_label.csv.")
 
+# -------- Afficher le taux d'anomalies --------
+total_count = len(df)
+anomaly_count = df['label'].sum()
+anomaly_ratio = anomaly_count / total_count
+
+print(f"Proportion d'utilisateurs anormaux : {anomaly_ratio:.2%}")
