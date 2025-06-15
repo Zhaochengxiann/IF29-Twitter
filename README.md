@@ -25,18 +25,21 @@ pip install pandas numpy pymongo
 
 ### Source des données
 
-Les données sont stockées dans une base MongoDB nommée **IF29**, collection **IF29**. Chaque document représente un tweet, contenant des métadonnées utilisateur.
+Les données brutes sont collectées depuis **MongoDB** et transformées en un DataFrame utilisateur.
 
-### Script utilisé
+Exemples de caractéristiques calculées :
 
-Le script `dataCleaning.py` permet d’extraire des **statistiques agrégées par utilisateur** à partir des tweets.
+- `follower_friend_ratio`
+- `tweets_par_jour`
+- `visibility` (via mentions + hashtags)
+- `aggressiveness` (activité combinée + croissance)
+- `reply_rate`, `quote_rate`
 
-**Principales étapes :**
+➡️ Export final : `cleaned_data_all.csv`
 
-- Chargement des données depuis MongoDB
-- Agrégation des tweets par utilisateur (`user_id`)
-- Calcul de diverses métriques comportementales
-- Export d’un fichier CSV cleaned_data_all.csv pour la visualisation, la normalisation et la réduction de dimension (PCA, t-SNE), avant l’entraînement du modèle. 
+Pour la version supervisée, un **label binaire** (`label`) est attribué selon des critères heuristiques inspirés de la littérature (SPOT, Botometer, etc.).
+
+➡️ Export : `cleaned_data_with_anomaly_label.csv`
 
 ### Variables extraites
 
@@ -61,47 +64,47 @@ Le script `dataCleaning.py` permet d’extraire des **statistiques agrégées pa
 
 ------
 
-## Idées pour l’entraînement et l’évaluation des modèles
+## Méthode non-supervisée : K-Means + PCA
 
-🧠Nous n'avons pas encore commencé l'entraînement du modèle. Voici quelques idées préliminaires pour cette phase... ...
+- **Réduction de dimension** : PCA à 7 composantes (≥ 90% de variance)
+- **Clustering** : `MiniBatchKMeans` sur 100 000 profils
+- **Choix de k** : basé sur le Silhouette Score → **k = 2**
+- **Visualisation** : UMAP + export statique `Kmeans_visu.png`
 
-### Approche supervisée
+Résultat :
 
-#### Objectif :
+- Cluster 0 : 22,8 % des utilisateurs
+- Cluster 1 : 77,2 % des utilisateurs
 
-- Apprendre à classifier les profils suspects via un modèle supervisé basé sur un jeu de données annoté (si disponible ou simulé).
+Les clusters montrent une séparation claire, et les comportements du cluster minoritaire suggèrent des profils suspects.
 
-#### Modèles envisagés :
 
-- `Random Forest`
-- `SVM`
-- `Logistic Regression`
-- `XGBoost`
+### Méthode supervisée : SVM
 
-#### Métriques d’évaluation :
+- PCA à 6 composantes principales (variance ≥ 80 %)
+- Labelisation binaire : `0 = Non suspect`, `1 = Suspect`
+- Modèle : `SVM` (kernel RBF)
+- Dataset : 700 000 utilisateurs
 
-- Accuracy
-- Précision, rappel, F1-score
-- Temps d’entraînement
-- Matrice de confusion
+### Résultats sur l'ensemble de test :
 
-------
+| Métrique  | Score   |
+| --------- | ------- |
+| Accuracy  | 99.71 % |
+| Précision | 99.34 % |
+| Rappel    | 99.98 % |
+| F1-Score  | 99.66 % |
 
-### Approche non supervisée
+➡️ Visualisation : Matrice de confusion annotée
 
-#### Objectif :
 
-- Identifier automatiquement des groupes d’utilisateurs similaires et repérer des comportements déviants sans étiquettes.
 
-#### Méthodes envisagées :
+## Lancer les scripts
 
-- `K-Means`
-- `DBSCAN`
-- `Isolation Forest` (semi-supervisé)
-- Réduction de dimension avec `PCA` ou `t-SNE`
+```python
+# Nettoyage des données
+python traitement_des_données/dataCleaning.py
 
-#### Métriques :
-
-- Silhouette Score
-- Visualisation des clusters
-- Évaluation manuelle par inspection des clusters suspects
+# Génération des labels (version supervisée)
+python traitement_des_données/label_final.py
+```
