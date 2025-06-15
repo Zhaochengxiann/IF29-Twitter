@@ -5,7 +5,7 @@ from datetime import datetime
 
 client = MongoClient("mongodb://localhost:27017/")
 db = client["IF29"]
-collection = db["test"]
+collection = db["IF29"]
 document = collection.find_one()
 user_stats = {}
 
@@ -84,7 +84,7 @@ df["tweets_per_hour"] = (df["tweet_count"] / df["active_hours"]).apply(lambda x:
 # "tweets_par_heure
 df["tweets_par_jour"] = (df["tweet_count"] / df["active_hours"] * 24).apply(lambda x: 0 if np.isinf(x) else x)
 # friends_per_hour
-df["amis_par_heure"] = ((df["last_friends"] - df["first_friends"]).abs() / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) or pd.isna(x) else x)
+df["friends_per_hour"] = ((df["last_friends"] - df["first_friends"]).abs() / df["active_hours"]).apply(lambda x: 0 if np.isinf(x) or pd.isna(x) else x)
 # agressivité  - Les nombres maximums d'API sont dérivés des journaux Twitter POST Endpoint Rate Limit pour 2018.
 df["aggressiveness"] = ( df["tweets_per_hour"] + df["friends_per_hour"] ) / 140
 # visibilité  -En utilisant la formule de SPOT 1.0, basée sur les changements 2018 de la limite de caractères du canal Twitter officiel
