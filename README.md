@@ -79,7 +79,7 @@ Résultat :
 Les clusters montrent une séparation claire, et les comportements du cluster minoritaire suggèrent des profils suspects.
 
 
-### Méthode supervisée : SVM
+## Méthode supervisée : SVM
 
 - PCA à 6 composantes principales (variance ≥ 80 %)
 - Labelisation binaire : `0 = Non suspect`, `1 = Suspect`
